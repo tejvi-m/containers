@@ -42,7 +42,15 @@ static int runContainer(void *arg){
       die("Failure in child: read from pipe returned != 0\n");
   }
 
+
   sethostname(args -> hostname, strlen(args -> hostname));
+
+  if (umount2("/proc", MNT_DETACH) < 0) die("unmount proc");
+  // unmount proc, mnt_detach - lazy unmount. -makes mount point unavailable for new accesses, and actually umount when its no longer busy.
+  // umount2 has more flags than umount
+  // https://linux.die.net/man/2/umount2
+
+  if (mount("proc", "/proc", "proc", 0, NULL) < 0) die("mount proc");
 
   printf("Executing %s\n", args->args[0]);
 
@@ -54,7 +62,7 @@ static int runContainer(void *arg){
 }
 
 int main(int argc, char* argv[]){
-    int flags = SIGCHLD | CLONE_NEWUTS ;
+    int flags = SIGCHLD | CLONE_NEWUTS | CLONE_NEWPID;
     // sigchild - termination signal
     // clone newuts - namespace for unix time sharing. set a new host name.
     // TODO add more flags for more namespaces.
@@ -66,7 +74,7 @@ int main(int argc, char* argv[]){
 
     childProc.hostname = "container";
     childProc.args = &argv[1];
-  
+
     if (pipe(childProc.pipe_fd) == -1) die("pipe");
 
     container = clone(runContainer, cloneStack.ptr, flags, &childProc);
