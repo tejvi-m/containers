@@ -44,6 +44,16 @@ static int runContainer(void *arg){
 
 
   sethostname(args -> hostname, strlen(args -> hostname));
+  if (mount("/", "/", "none", MS_PRIVATE | MS_REC, NULL) < 0 ) {
+        die("mount private");
+    }
+  unshare(CLONE_NEWNS);
+
+  // int env = chroot("/home/tejvi/systemsProg/containersFromScratch/");
+  // if(env != 0) die("chroot");
+  // chdir("/");
+  // TODO figure out how to change root
+  // i think we need an entire filesystem to do that.
 
   if (umount2("/proc", MNT_DETACH) < 0) die("unmount proc");
   // unmount proc, mnt_detach - lazy unmount. -makes mount point unavailable for new accesses, and actually umount when its no longer busy.
@@ -62,7 +72,7 @@ static int runContainer(void *arg){
 }
 
 int main(int argc, char* argv[]){
-    int flags = SIGCHLD | CLONE_NEWUTS | CLONE_NEWPID;
+    int flags = SIGCHLD | CLONE_NEWUTS | CLONE_NEWPID | CLONE_NEWNS;
     // sigchild - termination signal
     // clone newuts - namespace for unix time sharing. set a new host name.
     // TODO add more flags for more namespaces.
