@@ -31,6 +31,32 @@ struct stackClone{
   char ptr[0];
 };
 
+
+void setupCgroups(int memoryLimit, int cpuset, int procMax){
+
+    // memory limit:
+    // procMax: create new cgroup in /sys/fs/cgroup/pids/exp (exp is the cgroup name)
+    // add current pid to the file cgroup.procs, and set procs.max to the maximum allowed number of processes.
+
+    // for memory limit, /sys/fs/cgroup/memory/<pid>, cahnce memory.limit_in_bytes.
+
+    // for cpuset
+
+    //syntax for snprintf(char *, size, format, values...);
+
+    // make a directory called exp in the groups pseudo fs
+
+    // char *memCgroup = "/sys/fs/memory/exp/";
+    char *procCgroupMax = "/sys/fs/pids/exp/pids.max";
+    char *procCgroupPID = "/sys/fs/pids/exp/cgroup.procs";
+
+    // FILE *fp = fopen(procCgroupPID, "w+");
+    // fprintf(fp, "%u\n", getpid());
+    // FILE *fp2 = fopen(procCgroupMax, "w+");
+    // fprintf(fp2, "%d\n", procMax + 20);
+
+}
+
 static int runContainer(void *arg){
   struct child *args = (struct child *) arg;
   char ch;
@@ -42,6 +68,7 @@ static int runContainer(void *arg){
       die("Failure in child: read from pipe returned != 0\n");
   }
 
+  setupCgroups(0, 0, 10);
 
   sethostname(args -> hostname, strlen(args -> hostname));
   if (mount("/", "/", "none", MS_PRIVATE | MS_REC, NULL) < 0 ) {
@@ -55,11 +82,19 @@ static int runContainer(void *arg){
   // TODO figure out how to change root
   // i think we need an entire filesystem to do that.
 
+
+  // in case of having a separate image (file system),
+  // change root,
+  // mount proc  and temporary file system
+  // run command
+  // unmount
+  // changes do not persist, afaik
+
+
   if (umount2("/proc", MNT_DETACH) < 0) die("unmount proc");
   // unmount proc, mnt_detach - lazy unmount. -makes mount point unavailable for new accesses, and actually umount when its no longer busy.
   // umount2 has more flags than umount
   // https://linux.die.net/man/2/umount2
-
   if (mount("proc", "/proc", "proc", 0, NULL) < 0) die("mount proc");
 
   printf("Executing %s\n", args->args[0]);
