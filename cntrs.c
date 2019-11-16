@@ -11,7 +11,9 @@
 #include <limits.h>
 #include <errno.h>
 #include <getopt.h>
-
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #define die(msg)                                      \
 do {                                                  \
@@ -50,9 +52,14 @@ void setupCgroups(pid_t containerPID, int memoryLimit, int cpuset, int procMax){
     char *memCgroupPID = "/sys/fs/cgroup/memory/exp/cgroup.procs";
     char *procCgroupMax = "/sys/fs/cgroup/pids/exp/pids.max";
     char *procCgroupPID = "/sys/fs/cgroup/pids/exp/cgroup.procs";
-
+    char *cpuCgroupLimit = "/sys/fs/cgroup/cpuset/exp/cpuset.cpus";
+    char *cpuCgroupPID = "/sys/fs/cgroup/cpuset/exp/cgroup.procs";
 
     // dont use getpid(), pids start at 1 now. use contianer pid
+
+    mkdir("/sys/fs/cgroup/memory/exp/", 0777);
+    mkdir("/sys/fs/cgroup/pids/exp/", 0777);
+    mkdir("/sys/fs/cgroup/cpuset/exp/", 0777);
 
     FILE *fp1 = fopen(procCgroupPID, "a");
     fprintf(fp1 , "%d\n", (int) containerPID);
@@ -72,6 +79,13 @@ void setupCgroups(pid_t containerPID, int memoryLimit, int cpuset, int procMax){
     fprintf(fp4, "%d\n", 1 * 1024 * 1024);
     fclose(fp4);
 
+    FILE *fp5 = fopen(cpuCgroupPID, "a");
+    fprintf(fp5 , "%d\n", (int) containerPID);
+    fclose(fp5);
+
+    FILE *fp6 = fopen(cpuCgroupLimit, "w+");
+    fprintf(fp6 , "0-%d\n", 1);
+    fclose(fp6);
 }
 
 static int runContainer(void *arg){
