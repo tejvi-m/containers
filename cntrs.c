@@ -76,11 +76,10 @@ static int runContainer(void *arg){
     }
   unshare(CLONE_NEWNS);
 
-  // int env = chroot("/home/tejvi/systemsProg/containersFromScratch/");
-  // if(env != 0) die("chroot");
-  // chdir("/");
-  // TODO figure out how to change root
-  // i think we need an entire filesystem to do that.
+  // chaning root to a copy of the ubuntu file system. 
+  int env = chroot("/home/tejvi/rootfs/");
+  if(env != 0) die("chroot");
+  chdir("/");
 
 
   // in case of having a separate image (file system),
@@ -91,7 +90,7 @@ static int runContainer(void *arg){
   // changes do not persist, afaik
 
 
-  if (umount2("/proc", MNT_DETACH) < 0) die("unmount proc");
+  // if (umount2("/proc", MNT_DETACH) < 0) die("unmount proc");
   // unmount proc, mnt_detach - lazy unmount. -makes mount point unavailable for new accesses, and actually umount when its no longer busy.
   // umount2 has more flags than umount
   // https://linux.die.net/man/2/umount2
