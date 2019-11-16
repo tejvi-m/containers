@@ -46,22 +46,32 @@ void setupCgroups(pid_t containerPID, int memoryLimit, int cpuset, int procMax){
 
     // make a directory called exp in the groups pseudo fs
 
-    // char *memCgroup = "/sys/fs/cgroup/memory/exp/memory.limit_in_bytes";
+    char *memCgroupLimit = "/sys/fs/cgroup/memory/exp/memory.limit_in_bytes";
+    char *memCgroupPID = "/sys/fs/cgroup/memory/exp/cgroup.procs";
     char *procCgroupMax = "/sys/fs/cgroup/pids/exp/pids.max";
     char *procCgroupPID = "/sys/fs/cgroup/pids/exp/cgroup.procs";
 
-    // fprintf(fp, "%u\n", getpid());
+
     // dont use getpid(), pids start at 1 now. use contianer pid
 
-    FILE *fp = fopen(procCgroupPID, "a");
-    fprintf(fp, "%d\n", (int) containerPID);
+    FILE *fp1 = fopen(procCgroupPID, "a");
+    fprintf(fp1 , "%d\n", (int) containerPID);
+    fclose(fp1);
+
     FILE *fp2 = fopen(procCgroupMax, "w+");
-    fprintf(fp2, "%d\n", procMax + 20);
-    // FILE *fp3 = fopen(memCgroup, "w+");
-    // fprintf(fp3, "%d\n", 1 * 1024 * 1024);
-    // fclose(fp3);
-    fclose(fp);
+    fprintf(fp2, "%d\n", procMax);
     fclose(fp2);
+
+    // memory limits are enforced but they are not shown by tools like top or free since they look at /proc/meminfo
+    // we need to namespace proc/meminfo
+    FILE *fp3 = fopen(memCgroupPID, "a");
+    fprintf(fp3, "%d\n", 1 * 1024 * 1024);
+    fclose(fp3);
+
+    FILE *fp4 = fopen(memCgroupLimit, "w+");
+    fprintf(fp4, "%d\n", 1 * 1024 * 1024);
+    fclose(fp4);
+
 }
 
 static int runContainer(void *arg){
@@ -134,7 +144,7 @@ int main(int argc, char* argv[]){
     if(container == -1) die("clone");
 
 
-    setupCgroups(container, 0, 0, 0);
+    setupCgroups(container, 0, 0, 20);
     printf("child created with PID: %ld\n", (long) container);
 
     close(childProc.pipe_fd[1]);
