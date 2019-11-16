@@ -32,7 +32,7 @@ struct stackClone{
 };
 
 
-void setupCgroups(int memoryLimit, int cpuset, int procMax){
+void setupCgroups(pid_t containerPID, int memoryLimit, int cpuset, int procMax){
 
     // memory limit:
     // procMax: create new cgroup in /sys/fs/cgroup/pids/exp (exp is the cgroup name)
@@ -46,15 +46,22 @@ void setupCgroups(int memoryLimit, int cpuset, int procMax){
 
     // make a directory called exp in the groups pseudo fs
 
-    // char *memCgroup = "/sys/fs/memory/exp/";
-    char *procCgroupMax = "/sys/fs/pids/exp/pids.max";
-    char *procCgroupPID = "/sys/fs/pids/exp/cgroup.procs";
+    // char *memCgroup = "/sys/fs/cgroup/memory/exp/memory.limit_in_bytes";
+    char *procCgroupMax = "/sys/fs/cgroup/pids/exp/pids.max";
+    char *procCgroupPID = "/sys/fs/cgroup/pids/exp/cgroup.procs";
 
-    // FILE *fp = fopen(procCgroupPID, "w+");
     // fprintf(fp, "%u\n", getpid());
-    // FILE *fp2 = fopen(procCgroupMax, "w+");
-    // fprintf(fp2, "%d\n", procMax + 20);
+    // dont use getpid(), pids start at 1 now. use contianer pid
 
+    FILE *fp = fopen(procCgroupPID, "a");
+    fprintf(fp, "%d\n", (int) containerPID);
+    FILE *fp2 = fopen(procCgroupMax, "w+");
+    fprintf(fp2, "%d\n", procMax + 20);
+    // FILE *fp3 = fopen(memCgroup, "w+");
+    // fprintf(fp3, "%d\n", 1 * 1024 * 1024);
+    // fclose(fp3);
+    fclose(fp);
+    fclose(fp2);
 }
 
 static int runContainer(void *arg){
@@ -68,7 +75,6 @@ static int runContainer(void *arg){
       die("Failure in child: read from pipe returned != 0\n");
   }
 
-  setupCgroups(0, 0, 10);
 
   sethostname(args -> hostname, strlen(args -> hostname));
   if (mount("/", "/", "none", MS_PRIVATE | MS_REC, NULL) < 0 ) {
@@ -76,7 +82,7 @@ static int runContainer(void *arg){
     }
   unshare(CLONE_NEWNS);
 
-  // chaning root to a copy of the ubuntu file system. 
+  // chaning root to a copy of the ubuntu file system.
   int env = chroot("/home/tejvi/rootfs/");
   if(env != 0) die("chroot");
   chdir("/");
@@ -127,6 +133,8 @@ int main(int argc, char* argv[]){
 
     if(container == -1) die("clone");
 
+
+    setupCgroups(container, 0, 0, 0);
     printf("child created with PID: %ld\n", (long) container);
 
     close(childProc.pipe_fd[1]);
