@@ -48,18 +48,18 @@ void setupCgroups(pid_t containerPID, int memoryLimit, int cpuset, int procMax){
 
     // make a directory called exp in the groups pseudo fs
 
-    char *memCgroupLimit = "/sys/fs/cgroup/memory/exp/memory.limit_in_bytes";
-    char *memCgroupPID = "/sys/fs/cgroup/memory/exp/cgroup.procs";
-    char *procCgroupMax = "/sys/fs/cgroup/pids/exp/pids.max";
-    char *procCgroupPID = "/sys/fs/cgroup/pids/exp/cgroup.procs";
-    char *cpuCgroupLimit = "/sys/fs/cgroup/cpuset/exp/cpuset.cpus";
-    char *cpuCgroupPID = "/sys/fs/cgroup/cpuset/exp/cgroup.procs";
+    char *memCgroupLimit = "/sys/fs/cgroup/memory/exp1/memory.limit_in_bytes";
+    char *memCgroupPID = "/sys/fs/cgroup/memory/exp1/cgroup.procs";
+    char *procCgroupMax = "/sys/fs/cgroup/pids/exp1/pids.max";
+    char *procCgroupPID = "/sys/fs/cgroup/pids/exp1/cgroup.procs";
+    char *cpuCgroupLimit = "/sys/fs/cgroup/cpuset/exp1/cpuset.cpus";
+    char *cpuCgroupPID = "/sys/fs/cgroup/cpuset/exp1/cgroup.procs";
 
     // dont use getpid(), pids start at 1 now. use contianer pid
 
-    mkdir("/sys/fs/cgroup/memory/exp/", 0777);
-    mkdir("/sys/fs/cgroup/pids/exp/", 0777);
-    mkdir("/sys/fs/cgroup/cpuset/exp/", 0777);
+    mkdir("/sys/fs/cgroup/memory/exp1/", 0777);
+    mkdir("/sys/fs/cgroup/pids/exp1/", 0777);
+    mkdir("/sys/fs/cgroup/cpuset/exp1/", 0777);
 
     FILE *fp1 = fopen(procCgroupPID, "a");
     fprintf(fp1 , "%d\n", (int) containerPID);
@@ -69,23 +69,26 @@ void setupCgroups(pid_t containerPID, int memoryLimit, int cpuset, int procMax){
     fprintf(fp2, "%d\n", procMax);
     fclose(fp2);
 
+    int mem = 24;
+    int pid = (int) containerPID;
     // memory limits are enforced but they are not shown by tools like top or free since they look at /proc/meminfo
     // we need to namespace proc/meminfo
     FILE *fp3 = fopen(memCgroupPID, "a");
-    fprintf(fp3, "%d\n", 1 * 1024 * 1024);
+    fprintf(fp3, "%d\n", pid);
+    fflush(fp3);
     fclose(fp3);
 
     FILE *fp4 = fopen(memCgroupLimit, "w+");
-    fprintf(fp4, "%d\n", 1 * 1024 * 1024);
+    fprintf(fp4, "%d\n", mem);
     fclose(fp4);
 
-    FILE *fp5 = fopen(cpuCgroupPID, "a");
-    fprintf(fp5 , "%d\n", (int) containerPID);
-    fclose(fp5);
-
-    FILE *fp6 = fopen(cpuCgroupLimit, "w+");
-    fprintf(fp6 , "0-%d\n", 1);
-    fclose(fp6);
+    // FILE *fp5' = fopen(cpuCgroupPID, "a");
+    // fprintf(fp5 , "%d\n", (int) containerPID);
+    // fclose(fp5);
+    //
+    // FILE *fp6 = fopen(cpuCgroupLimit, "w+");
+    // fprintf(fp6 , "0-%d\n", 1);
+    // fclose(fp'6);
 }
 
 static int runContainer(void *arg){
