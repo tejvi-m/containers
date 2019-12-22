@@ -42,7 +42,7 @@ void setupCgroups(pid_t containerPID, int memoryLimit, int cpuset, int procMax){
 
     // for memory limit, /sys/fs/cgroup/memory/<pid>, cahnce memory.limit_in_bytes.
 
-    // for cpuset
+
 
     //syntax for snprintf(char *, size, format, values...);
 
@@ -52,14 +52,11 @@ void setupCgroups(pid_t containerPID, int memoryLimit, int cpuset, int procMax){
     char *memCgroupPID = "/sys/fs/cgroup/memory/exp1/cgroup.procs";
     char *procCgroupMax = "/sys/fs/cgroup/pids/exp1/pids.max";
     char *procCgroupPID = "/sys/fs/cgroup/pids/exp1/cgroup.procs";
-    char *cpuCgroupLimit = "/sys/fs/cgroup/cpuset/exp1/cpuset.cpus";
-    char *cpuCgroupPID = "/sys/fs/cgroup/cpuset/exp1/cgroup.procs";
 
     // dont use getpid(), pids start at 1 now. use contianer pid
 
     mkdir("/sys/fs/cgroup/memory/exp1/", 0777);
     mkdir("/sys/fs/cgroup/pids/exp1/", 0777);
-    mkdir("/sys/fs/cgroup/cpuset/exp1/", 0777);
 
     FILE *fp1 = fopen(procCgroupPID, "a");
     fprintf(fp1 , "%d\n", (int) containerPID);
@@ -69,10 +66,10 @@ void setupCgroups(pid_t containerPID, int memoryLimit, int cpuset, int procMax){
     fprintf(fp2, "%d\n", procMax);
     fclose(fp2);
 
-    int mem = 24;
+    int mem = 10;
     int pid = (int) containerPID;
     // memory limits are enforced but they are not shown by tools like top or free since they look at /proc/meminfo
-    // we need to namespace proc/meminfo
+    // we need to namespace proc/meminfo?
     FILE *fp3 = fopen(memCgroupPID, "a");
     fprintf(fp3, "%d\n", pid);
     fflush(fp3);
@@ -82,13 +79,7 @@ void setupCgroups(pid_t containerPID, int memoryLimit, int cpuset, int procMax){
     fprintf(fp4, "%d\n", mem);
     fclose(fp4);
 
-    // FILE *fp5' = fopen(cpuCgroupPID, "a");
-    // fprintf(fp5 , "%d\n", (int) containerPID);
-    // fclose(fp5);
-    //
-    // FILE *fp6 = fopen(cpuCgroupLimit, "w+");
-    // fprintf(fp6 , "0-%d\n", 1);
-    // fclose(fp'6);
+  
 }
 
 static int runContainer(void *arg){
@@ -110,7 +101,7 @@ static int runContainer(void *arg){
   unshare(CLONE_NEWNS);
 
   // chaning root to a copy of the ubuntu file system.
-  int env = chroot("/home/tejvi/rootfs/");
+  int env = chroot("~/rootfs/");
   if(env != 0) die("chroot");
   chdir("/");
 
